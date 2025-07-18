@@ -1,2 +1,3 @@
-Real-Time Sign Language Recognition
+**Real-Time Sign Language Recognition**
+
 Objective: Convert hand gestures to text in real-time.
