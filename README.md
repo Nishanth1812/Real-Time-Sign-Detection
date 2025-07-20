@@ -11,4 +11,10 @@ Objective: Convert hand gestures to text in real-time.
 
 -> Testing main.py 
 
--> Improving the code presentation and reducing the complexity 
+-> Improving the code presentation and reducing the complexity  
+
+
+Alternate Datasets
+
+Sataset-: https://www.kaggle.com/datasets/ayuraj/asl-dataset
+
