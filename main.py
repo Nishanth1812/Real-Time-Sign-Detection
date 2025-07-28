@@ -41,17 +41,27 @@ def get_prediction(img_array):
     confidence = np.max(pred) * 100
     return class_names[class_id], confidence
 
+
 # ==== Shared state ====
 latest_frame = None
 stable_pred = ""
 lock = threading.Lock()
 last_confident_time = time.time()
+typed_word=""
+last_letter=""
+letter_start_time=time.time()
+word_ready=False
+final_word= ""
+
+
 
 # ==== Prediction thread ====
 def prediction_worker():
     global latest_frame, stable_pred, last_confident_time
+    global typed_word,last_letter,letter_start_time
     last_pred_time = 0
-
+    global word_ready, final_word
+    
     while True:
         # Ensure frame exists and time interval met
         if latest_frame is not None and (time.time() - last_pred_time >= PREDICT_INTERVAL):
@@ -84,8 +94,10 @@ def prediction_worker():
                     else:
                         k = bg_size / w
                         new_h = ceil(k * h)
+                        new_w = bg_size 
                         resized = cv2.resize(img_crop, (bg_size, new_h))
-                        h_gap = ceil((bg_size - new_h) / 2) 
+                        h_gap = ceil((bg_size - new_h) / 2)
+                        w_gap=0
                         bg_img = cv2.copyMakeBorder(
                             resized,
                             top=h_gap, bottom=bg_size - h_gap - new_h,
@@ -101,17 +113,37 @@ def prediction_worker():
                 stable_pred = ""
                 continue
 
-            # Update stable prediction
-            if confidence >= 50:
+            # Word Prediction 
+            if confidence >= 60 and not word_ready:
                 print(f"Prediction: {pred}, Confidence: {confidence:.2f}%")
                 stable_pred = pred
                 last_confident_time = time.time()
+                
+                if pred!=last_letter:
+                    last_letter=pred
+                    letter_start_time=time.time()
+                else:
+                    if time.time()-letter_start_time>1.0:
+                        if pred=="space":
+                            word_ready=True
+                            final_word= typed_word.strip()
+                            print("Final Word:",final_word)
+                            letter_start_time=time.time()
+                            
+                        elif pred=="del":
+                            typed_word=typed_word[:-1]
+                            
+                        elif pred not in ['nothing']:
+                            typed_word+=pred
+                            last_letter=""
+                            letter_start_time=time.time()
+                        
 
         # Clear stale prediction after 0.7 seconds
         if time.time() - last_confident_time > 0.7:
             stable_pred = ""
 
-        time.sleep(0.01)  # CPU relief
+        time.sleep(0.01)  
 
 # ==== Start prediction thread ====
 threading.Thread(target=prediction_worker, daemon=True).start()
@@ -140,13 +172,36 @@ while True:
                 cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)  # Yellow FPS
 
     # Display prediction (cyan color)
-    if stable_pred:
+    if stable_pred and not word_ready:
+        cv2.putText(img, f"Typing: {typed_word}", (30, 160),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 255, 0), 3)
         cv2.putText(img, stable_pred, (30, 100),
-                    cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 0), 4)  # Cyan prediction
+                    cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 0), 4)
+        print("Typing:", typed_word)
+
+    elif word_ready:
+        cv2.putText(img, f"Detected Word: {final_word}", (30, 160),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1.5, (255, 0, 255), 3)
+        print("Final Word:", final_word)
+
+        
 
     cv2.imshow("ASL Detection", img)
-    if cv2.waitKey(10) & 0xFF == ord('q'):
+    key = cv2.waitKey(10) & 0xFF
+    if key == ord('q'):
         break
+    elif key == ord('r'):
+        typed_word = ""
+        final_word = ""
+        word_ready = False
+        print("Word Reset.")
+        
+    elif key == ord('n'):  
+        typed_word = ""
+        final_word = ""
+        word_ready = False
+        last_letter = ""
+        print("Ready for next word...")
 
 stream.release()
 cv2.destroyAllWindows()
