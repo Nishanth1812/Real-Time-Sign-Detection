@@ -18,3 +18,4 @@ Alternate Datasets
 
 Sataset-: https://www.kaggle.com/datasets/ayuraj/asl-dataset
 
+NOTE: Try to run the main.py with the model that i sent, named ANOTHER_SOME_CHANGES_NEW_MODEL.keras, u can see the result. When you r showing this project to the reviewer, try to not use T hand sign because it is has the same type of sign as S for the model. When u want to predict the hand sign, try to hold the for at least 4-5 seconds and change angles slightly.First, try to predict all the alphabets one by one by changing hand angles, then u will know how model is predicting the alphabet. Like u will get the idea when we keep like this(hand posture),how my model predicts correctly.
